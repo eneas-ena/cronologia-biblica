@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cronologia Bíblica: Longevidade dos Patriarcas e Personagens</title>
+
+  <!-- App instalável (PWA) -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cronologia" />
+
+  <!-- Aplica o tema salvo antes de desenhar a tela (evita "piscar") -->
+  <script>
+    try {
+      if (localStorage.getItem("cronologia-tema") === "escuro") {
+        document.documentElement.classList.add("dark");
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: "class" };</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .font-serif-bible {
+      font-family: 'Lora', Georgia, serif;
+    }
+    /* Animação suave para o popup */
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-modal {
+      animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    /* Estilização da barra de rolagem horizontal em telas menores */
+    .chart-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .chart-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .chart-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .chart-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Efeito de hover nas linhas do gráfico */
+    .character-row {
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .character-row:hover .bar-rect {
+      fill: #9bd656;
+      stroke: #4d7c0f;
+      stroke-width: 1.5px;
+    }
+    .character-row:hover .row-highlight {
+      opacity: 1;
+    }
+    .character-row:hover .char-label {
+      fill: #1d4ed8;
+      font-weight: 700;
+    }
+    /* ===== Modo escuro ===== */
+    html.dark body {
+      background-color: #020617;
+      color: #e2e8f0;
+    }
+    html.dark .character-row:hover .char-label {
+      fill: #bfdbfe;
+    }
+    html.dark .chart-scroll::-webkit-scrollbar-track { background: #1e293b; }
+    html.dark .chart-scroll::-webkit-scrollbar-thumb { background: #475569; }
+    /* Respeita a área do "notch" quando aberto como app no iPhone/iPad */
+    header { padding-top: env(safe-area-inset-top); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-lime-200 selection:text-slate-900">
+
+  <!-- Cabeçalho Principal -->
+  <!-- Aviso de versão nova -->
+  <div id="updateBanner" class="hidden fixed top-0 inset-x-0 z-[60] bg-lime-400 text-slate-950 text-sm font-medium px-4 py-2.5 items-center justify-center gap-3 shadow-md" style="padding-top: calc(env(safe-area-inset-top) + 0.6rem);">
+    <span id="updateBannerText">Há uma versão nova do app disponível.</span>
+    <button id="btnUpdateNow" type="button" class="px-3 py-1 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 cursor-pointer">
+      Atualizar agora
+    </button>
+  </div>
+
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-lime-100 text-lime-800 border border-lime-300 dark:bg-lime-900/40 dark:text-lime-300 dark:border-lime-700">
+            Anno Mundi (Anos após a Criação)
+          </span>
+          <span class="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">• Cronologia Bíblica</span>
+          <span id="versionBadge" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-md">v—</span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
+          Longevidade dos Patriarcas e Personagens Bíblicos
+        </h1>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Alternar claro/escuro -->
+        <button
+          id="btnTheme"
+          type="button"
+          class="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
+          title="Alternar modo claro / escuro"
+          aria-label="Alternar modo claro ou escuro"
+        >
+          <!-- Lua (aparece no modo claro) -->
+          <svg class="w-5 h-5 dark:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <!-- Sol (aparece no modo escuro) -->
+          <svg class="w-5 h-5 hidden dark:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </button>
+
+        <!-- Atualizar app (manual) -->
+        <button
+          id="btnUpdateManual"
+          type="button"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
+          title="Baixar a versão mais recente do app"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Atualizar app</span>
+        </button>
+
+        <button
+          id="btnDownloadPng"
+          type="button"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.99] transition shadow-sm cursor-pointer"
+          title="Salvar gráfico em imagem PNG de alta definição"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Baixar PNG (Alta Resolução)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 flex-1">
+
+    <!-- Barra de Dica Interativa -->
+    <div class="mb-4 bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm text-blue-900 dark:text-blue-200">
+      <div class="flex items-center gap-2.5">
+        <span class="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+        </span>
+        <p class="leading-snug">
+          <strong>Interativo:</strong> Toque ou clique sobre a faixa verde (ou nome) de qualquer personagem para abrir o box com o <strong>texto bíblico</strong> e o <strong>ano aproximado de nascimento e morte</strong>.
+        </p>
+      </div>
+      <span class="hidden lg:inline-block text-xs font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-900">
+        27 Personagens
+      </span>
+    </div>
+
+    <!-- Container do Gráfico Vetorial (SVG de Alta Resolução) -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="chart-scroll overflow-x-auto p-3 sm:p-6">
+        <div id="svgContainer" class="min-w-[860px] w-full flex justify-center">
+          <!-- O SVG será renderizado via JavaScript com precisão vetorial -->
+        </div>
+      </div>
+
+      <!-- Legenda e Notas Explicativas no Rodapé do Card -->
+      <div class="bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-4 h-3 rounded-sm inline-block bg-[#b4e37c] border border-[#8ec64e]"></span>
+            <span>Período de vida (anos)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-0.5 h-3.5 inline-block bg-[#1d63dc]"></span>
+            <span>Dilúvio (Ano 1656 após a Criação)</span>
+          </div>
+        </div>
+        <p class="text-slate-500 dark:text-slate-400">
+          Escala baseada na cronologia bíblica tradicional (Texto Massorético / Anno Mundi).
+          <span id="versionFooter" class="ml-1 font-semibold"></span>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Box / Modal Popup do Personagem -->
+  <div
+    id="characterModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+  >
+    <div
+      id="modalCard"
+      class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-modal max-h-[92vh] overflow-y-auto"
+    >
+      <!-- Topo do Modal -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 px-6 py-5 text-white relative">
+        <button
+          id="btnCloseModal"
+          type="button"
+          class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+          aria-label="Fechar janela"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-lime-300 mb-1">
+          <span id="modalIndexBadge">Personagem 1 de 27</span>
+          <span>•</span>
+          <span id="modalEraBadge">Antes do Dilúvio</span>
+        </div>
+
+        <div class="flex items-baseline justify-between gap-3 pr-8">
+          <h2 id="modalTitle" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Adão
+          </h2>
+          <span id="modalAgeBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-lime-400 text-slate-950 shadow-sm shrink-0">
+            930 anos
+          </span>
+        </div>
+        <p id="modalSubtitle" class="text-slate-300 text-sm mt-1">
+          O primeiro homem criado por Deus
+        </p>
+      </div>
+
+      <!-- Corpo do Modal -->
+      <div class="p-6 space-y-5">
+        <!-- Cards de Nascimento e Morte -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5">
+            <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1 dark:text-slate-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Nascimento Aprox.</span>
+            </div>
+            <div id="modalBirthAM" class="text-lg font-bold text-slate-900 dark:text-white">
+              Ano 0 AM
+            </div>
+            <div id="modalBirthBC" class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+              ~4004 a.C.
+            </div>
+          </div>
+
+          <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5">
+            <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1 dark:text-slate-400">
+              <span id="modalDeathDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+              <span id="modalDeathLabel">Morte Aprox.</span>
+            </div>
+            <div id="modalDeathAM" class="text-lg font-bold text-slate-900 dark:text-white">
+              Ano 930 AM
+            </div>
+            <div id="modalDeathBC" class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+              ~3074 a.C.
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco do Texto Bíblico -->
+        <div class="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900 rounded-xl p-4 relative">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Texto Bíblico
+            </span>
+            <span id="modalReference" class="text-xs font-bold text-amber-900 bg-amber-200/70 px-2.5 py-0.5 rounded-md">
+              Gênesis 5:5
+            </span>
+          </div>
+
+          <blockquote id="modalVerse" class="font-serif-bible italic text-slate-800 dark:text-slate-100 text-base leading-relaxed">
+            "Todos os dias que Adão viveu foram novecentos e trinta anos; e morreu."
+          </blockquote>
+
+          <p id="modalNote" class="text-xs text-slate-600 dark:text-slate-300 mt-3 pt-2.5 border-t border-amber-200/60 dark:border-amber-900 leading-relaxed">
+            Nota histórica e cronológica.
+          </p>
+        </div>
+
+        <!-- Navegação entre Personagens -->
+        <div class="flex items-center justify-between pt-1">
+          <button
+            id="btnPrevChar"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Anterior</span>
+          </button>
+
+          <button
+            id="btnCloseFooter"
+            type="button"
+            class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            Fechar
+          </button>
+
+          <button
+            id="btnNextChar"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <span>Próximo</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de Feedback (Exportação PNG) -->
+  <div id="toastMsg" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-slate-700 items-center gap-2.5">
+    <span class="w-2.5 h-2.5 rounded-full bg-lime-400"></span>
+    <span id="toastText">Imagem gerada com sucesso!</span>
+  </div>
+
+  <script>
+    // Versão do app — aumente este número a cada atualização publicada no GitHub
+    const APP_VERSION = "1.0.0";
+
+    // Dados completos dos 27 personagens bíblicos em português
+    // Escala Anno Mundi (AM) a partir da Criação (0 AM ≈ 4004 a.C. na cronologia bíblica clássica)
+    const characters = [
+      {
+        name: "Adão",
+        subtitle: "Primeiro homem criado por Deus",
+        era: "Era Antediluviana",
+        birthAM: 0,
+        deathAM: 930,
+        age: 930,
+        birthBC: "~4004 a.C.",
+        deathBC: "~3074 a.C.",
+        reference: "Gênesis 5:5",
+        verse: "Todos os dias que Adão viveu foram novecentos e trinta anos; e morreu.",
+        note: "Adão foi contemporâneo de todos os patriarcas anteriores ao Dilúvio até Lameque (pai de Noé), tendo vivido até os 56 anos de idade de Lameque."
+      },
+      {
+        name: "Sete",
+        subtitle: "Terceiro filho de Adão e Eva, linhagem da promessa",
+        era: "Era Antediluviana",
+        birthAM: 130,
+        deathAM: 1042,
+        age: 912,
+        birthBC: "~3874 a.C.",
+        deathBC: "~2962 a.C.",
+        reference: "Gênesis 5:8",
+        verse: "Foram todos os dias de Sete novecentos e doze anos; e morreu.",
+        note: "Nascido quando Adão tinha 130 anos, Sete deu origem à genealogia piedosa preservada até Noé."
+      },
+      {
+        name: "Enos",
+        subtitle: "Filho de Sete; em seu tempo começou-se a invocar o Senhor",
+        era: "Era Antediluviana",
+        birthAM: 235,
+        deathAM: 1140,
+        age: 905,
+        birthBC: "~3769 a.C.",
+        deathBC: "~2864 a.C.",
+        reference: "Gênesis 5:11",
+        verse: "Foram todos os dias de Enos novecentos e cinco anos; e morreu.",
+        note: "Nasceu quando Sete tinha 105 anos e faleceu apenas 84 anos após o nascimento de Noé."
+      },
+      {
+        name: "Cainã",
+        subtitle: "Filho de Enos e neto de Sete",
+        era: "Era Antediluviana",
+        birthAM: 325,
+        deathAM: 1235,
+        age: 910,
+        birthBC: "~3679 a.C.",
+        deathBC: "~2769 a.C.",
+        reference: "Gênesis 5:14",
+        verse: "Foram todos os dias de Cainã novecentos e dez anos; e morreu.",
+        note: "Nasceu quando Enos tinha 90 anos; sua vida atravessou mais de nove séculos da história primitiva."
+      },
+      {
+        name: "Maalalel",
+        subtitle: "Filho de Cainã (seu nome significa 'Louvor de Deus')",
+        era: "Era Antediluviana",
+        birthAM: 395,
+        deathAM: 1290,
+        age: 895,
+        birthBC: "~3609 a.C.",
+        deathBC: "~2714 a.C.",
+        reference: "Gênesis 5:17",
+        verse: "Foram todos os dias de Maalalel oitocentos e noventa e cinco anos; e morreu.",
+        note: "Nasceu quando Cainã tinha 70 anos e conviveu com Adão por mais de 500 anos."
+      },
+      {
+        name: "Jarede",
+        subtitle: "Filho de Maalalel e pai de Enoque",
+        era: "Era Antediluviana",
+        birthAM: 460,
+        deathAM: 1422,
+        age: 962,
+        birthBC: "~3544 a.C.",
+        deathBC: "~2582 a.C.",
+        reference: "Gênesis 5:20",
+        verse: "Foram todos os dias de Jarede novecentos e sessenta e dois anos; e morreu.",
+        note: "O segundo homem mais longevo registrado na Bíblia, superado apenas por seu neto Matusalém."
+      },
+      {
+        name: "Enoque",
+        subtitle: "Filho de Jarede; andou com Deus e foi trasladado",
+        era: "Era Antediluviana",
+        birthAM: 622,
+        deathAM: 987,
+        age: 365,
+        birthBC: "~3382 a.C.",
+        deathBC: "~3017 a.C. (Trasladado)",
+        deathLabel: "Trasladação Aprox.",
+        reference: "Gênesis 5:23-24",
+        verse: "Foram todos os dias de Enoque trezentos e sessenta e cinco anos. Andou Enoque com Deus e já não era, porque Deus o tomou para si.",
+        note: "Diferente dos demais patriarcas, Enoque não experimentou a morte, sendo tomado por Deus aos 365 anos."
+      },
+      {
+        name: "Matusalém",
+        subtitle: "Filho de Enoque; o homem mais longevo da Bíblia",
+        era: "Era Antediluviana",
+        birthAM: 687,
+        deathAM: 1656,
+        age: 969,
+        birthBC: "~3317 a.C.",
+        deathBC: "~2348 a.C.",
+        reference: "Gênesis 5:27",
+        verse: "Foram todos os dias de Matusalém novecentos e sessenta e nove anos; e morreu.",
+        note: "Matusalém morreu exatamente no ano 1656 AM, o mesmo ano em que sobreveio o grande Dilúvio sobre a terra."
+      },
+      {
+        name: "Lameque",
+        subtitle: "Filho de Matusalém e pai de Noé",
+        era: "Era Antediluviana",
+        birthAM: 874,
+        deathAM: 1651,
+        age: 777,
+        birthBC: "~3130 a.C.",
+        deathBC: "~2353 a.C.",
+        reference: "Gênesis 5:31",
+        verse: "Foram todos os dias de Lameque setecentos e setenta e sete anos; e morreu.",
+        note: "Faleceu 5 anos antes do Dilúvio, profetizando antes que seu filho Noé traria consolo à humanidade."
+      },
+      {
+        name: "Noé",
+        subtitle: "Construtor da arca e sobrevivente do Dilúvio",
+        era: "Dilúvio / Pós-Dilúvio",
+        birthAM: 1056,
+        deathAM: 2006,
+        age: 950,
+        birthBC: "~2948 a.C.",
+        deathBC: "~1998 a.C.",
+        reference: "Gênesis 9:29",
+        verse: "Foram todos os dias de Noé novecentos e cinquenta anos; e morreu.",
+        note: "Tinha 600 anos quando veio o Dilúvio (1656 AM) e viveu ainda mais 350 anos depois das águas."
+      },
+      {
+        name: "Sem",
+        subtitle: "Filho de Noé e ancestral dos povos semitas",
+        era: "Era Pós-Diluviana",
+        birthAM: 1558,
+        deathAM: 2158,
+        age: 600,
+        birthBC: "~2446 a.C.",
+        deathBC: "~1846 a.C.",
+        reference: "Gênesis 11:10-11",
+        verse: "Era Sem da idade de cem anos quando gerou a Arfaxade, dois anos depois do dilúvio. E viveu Sem, depois que gerou a Arfaxade, quinhentos anos.",
+        note: "Sobreviveu ao Dilúvio na arca e viveu o suficiente para ser contemporâneo de Abraão e Isaque."
+      },
+      {
+        name: "Arfaxade",
+        subtitle: "Filho de Sem, nascido dois anos após o Dilúvio",
+        era: "Era Pós-Diluviana",
+        birthAM: 1658,
+        deathAM: 2096,
+        age: 438,
+        birthBC: "~2346 a.C.",
+        deathBC: "~1908 a.C.",
+        reference: "Gênesis 11:12-13",
+        verse: "Arfaxade viveu trinta e cinco anos e gerou a Salá. E viveu Arfaxade, depois que gerou a Salá, quatrocentos e três anos.",
+        note: "Primeiro patriarca nascido após o Dilúvio; nota-se a acentuada redução da longevidade humana a partir desta geração."
+      },
+      {
+        name: "Salá",
+        subtitle: "Filho de Arfaxade e pai de Éber",
+        era: "Era Pós-Diluviana",
+        birthAM: 1693,
+        deathAM: 2126,
+        age: 433,
+        birthBC: "~2311 a.C.",
+        deathBC: "~1878 a.C.",
+        reference: "Gênesis 11:14-15",
+        verse: "Salá viveu trinta anos e gerou a Éber. E viveu Salá, depois que gerou a Éber, quatrocentos e três anos.",
+        note: "Continuou a linhagem pós-diluviana de Sem até o nascimento de Abraão."
+      },
+      {
+        name: "Éber",
+        subtitle: "Filho de Salá; epônimo do povo hebreu",
+        era: "Era Pós-Diluviana",
+        birthAM: 1723,
+        deathAM: 2187,
+        age: 464,
+        birthBC: "~2281 a.C.",
+        deathBC: "~1817 a.C.",
+        reference: "Gênesis 11:16-17",
+        verse: "Éber viveu trinta e quatro anos e gerou a Pelegue. E viveu Éber, depois que gerou a Pelegue, quatrocentos e trinta anos.",
+        note: "De seu nome deriva o termo 'hebreu'. Viveu mais tempo que o próprio Abraão, seu descendente."
+      },
+      {
+        name: "Pelegue",
+        subtitle: "Filho de Éber; em seus dias a terra foi repartida",
+        era: "Era Pós-Diluviana",
+        birthAM: 1757,
+        deathAM: 1996,
+        age: 239,
+        birthBC: "~2247 a.C.",
+        deathBC: "~2008 a.C.",
+        reference: "Gênesis 11:18-19",
+        verse: "Pelegue viveu trinta anos e gerou a Reú. E viveu Pelegue, depois que gerou a Reú, duzentos e nove anos.",
+        note: "Seu nome significa 'divisão', em referência à dispersão dos povos após a Torre de Babel (Gênesis 10:25)."
+      },
+      {
+        name: "Reú",
+        subtitle: "Filho de Pelegue e bisavô de Terá",
+        era: "Era Pós-Diluviana",
+        birthAM: 1787,
+        deathAM: 2026,
+        age: 239,
+        birthBC: "~2217 a.C.",
+        deathBC: "~1978 a.C.",
+        reference: "Gênesis 11:20-21",
+        verse: "Reú viveu trinta e dois anos e gerou a Serugue. E viveu Reú, depois que gerou a Serugue, duzentos e sete anos.",
+        note: "Viveu exatamente o mesmo total de anos (239) que seu pai Pelegue."
+      },
+      {
+        name: "Serugue",
+        subtitle: "Filho de Reú e avô de Terá",
+        era: "Era Pós-Diluviana",
+        birthAM: 1819,
+        deathAM: 2049,
+        age: 230,
+        birthBC: "~2185 a.C.",
+        deathBC: "~1955 a.C.",
+        reference: "Gênesis 11:22-23",
+        verse: "Serugue viveu trinta anos e gerou a Naor. E viveu Serugue, depois que gerou a Naor, duzentos anos.",
+        note: "Nasceu quando Reú tinha 32 anos e faleceu quando Abraão tinha cerca de 41 anos."
+      },
+      {
+        name: "Naor",
+        subtitle: "Filho de Serugue e avô de Abraão",
+        era: "Era Pós-Diluviana",
+        birthAM: 1849,
+        deathAM: 1997,
+        age: 148,
+        birthBC: "~2155 a.C.",
+        deathBC: "~2007 a.C.",
+        reference: "Gênesis 11:24-25",
+        verse: "Naor viveu vinte e nove anos e gerou a Terá. E viveu Naor, depois que gerou a Terá, cento e dezenove anos.",
+        note: "Não confundir com seu neto homônimo Naor, irmão de Abraão."
+      },
+      {
+        name: "Terá",
+        subtitle: "Filho de Naor e pai de Abraão, Naor e Harã",
+        era: "Era Patriarcal",
+        birthAM: 1878,
+        deathAM: 2083,
+        age: 205,
+        birthBC: "~2126 a.C.",
+        deathBC: "~1921 a.C.",
+        reference: "Gênesis 11:32",
+        verse: "Foram os dias de Terá duzentos e cinco anos; e morreu Terá em Harã.",
+        note: "Partiu de Ur dos Caldeus rumo a Canaã com sua família, estabelecendo-se em Harã até sua morte."
+      },
+      {
+        name: "Abraão",
+        subtitle: "Patriarca da fé e pai da nação de Israel",
+        era: "Era Patriarcal",
+        birthAM: 2008,
+        deathAM: 2183,
+        age: 175,
+        birthBC: "~1996 a.C.",
+        deathBC: "~1821 a.C.",
+        reference: "Gênesis 25:7-8",
+        verse: "Estes, pois, são os dias dos anos da vida de Abraão, que viveu cento e setenta e cinco anos. E Abraão expirou, e morreu em boa velhice.",
+        note: "Chamado por Deus aos 75 anos para deixar Harã e habitar na terra prometida de Canaã."
+      },
+      {
+        name: "Ismael",
+        subtitle: "Filho primogênito de Abraão com Agar",
+        era: "Era Patriarcal",
+        birthAM: 2094,
+        deathAM: 2231,
+        age: 137,
+        birthBC: "~1910 a.C.",
+        deathBC: "~1773 a.C.",
+        reference: "Gênesis 25:17",
+        verse: "E estes são os anos da vida de Ismael: cento e trinta e sete anos; e expirou e morreu, e foi congregado ao seu povo.",
+        note: "Nasceu quando Abraão tinha 86 anos e tornou-se pai de doze príncipes, conforme a promessa divina."
+      },
+      {
+        name: "Isaque",
+        subtitle: "Filho da promessa de Abraão e Sara",
+        era: "Era Patriarcal",
+        birthAM: 2108,
+        deathAM: 2288,
+        age: 180,
+        birthBC: "~1896 a.C.",
+        deathBC: "~1716 a.C.",
+        reference: "Gênesis 35:28-29",
+        verse: "E foram os dias de Isaque cento e oitenta anos. E Isaque expirou e morreu, e foi recolhido ao seu povo, velho e farto de dias.",
+        note: "Nasceu quando Abraão tinha 100 anos e Sara 90; foi sepultado por seus filhos Esaú e Jacó."
+      },
+      {
+        name: "Jacó",
+        subtitle: "Filho de Isaque, renomeado Israel por Deus",
+        era: "Era Patriarcal",
+        birthAM: 2168,
+        deathAM: 2315,
+        age: 147,
+        birthBC: "~1836 a.C.",
+        deathBC: "~1689 a.C.",
+        reference: "Gênesis 47:28",
+        verse: "E Jacó viveu na terra do Egito dezessete anos; de sorte que os dias de Jacó, os anos da sua vida, foram cento e quarenta e sete anos.",
+        note: "Desceu ao Egito aos 130 anos para reencontrar seu filho José e abençoou as doze tribos antes de falecer."
+      },
+      {
+        name: "Judá",
+        subtitle: "Quarto filho de Jacó; tribo da linhagem real messiânica",
+        era: "Era Patriarcal",
+        birthAM: 2255,
+        deathAM: 2365,
+        age: 110,
+        birthBC: "~1749 a.C.",
+        deathBC: "~1639 a.C.",
+        reference: "Gênesis 49:8-10",
+        verse: "Judá, a ti te louvarão os teus irmãos... O cetro não se arredará de Judá, nem o legislador dentre seus pés, até que venha Siló.",
+        note: "Nota: O Antigo Testamento não registra a idade exata da morte de Judá; os 110 anos refletem a estimativa cronológica tradicional (semelhante à de seu irmão José em Gênesis 50:26)."
+      },
+      {
+        name: "Moisés",
+        subtitle: "Libertador de Israel, profeta e legislador",
+        era: "Êxodo / Lei",
+        birthAM: 2433,
+        deathAM: 2553,
+        age: 120,
+        birthBC: "~1571 a.C.",
+        deathBC: "~1451 a.C.",
+        reference: "Deuteronômio 34:7",
+        verse: "Era Moisés da idade de cento e vinte anos quando morreu; os seus olhos nunca se escureceram, nem perdeu o seu vigor.",
+        note: "Sua vida dividiu-se em três períodos de 40 anos: no Egito, em Midiã e liderando Israel no deserto até o Monte Nebo."
+      },
+      {
+        name: "Josué",
+        subtitle: "Sucessor de Moisés e líder na conquista de Canaã",
+        era: "Conquista de Canaã",
+        birthAM: 2473,
+        deathAM: 2583,
+        age: 110,
+        birthBC: "~1531 a.C.",
+        deathBC: "~1421 a.C.",
+        reference: "Josué 24:29",
+        verse: "E depois destas coisas sucedeu que Josué, filho de Num, servo do Senhor, faleceu, sendo da idade de cento e dez anos.",
+        note: "Um dos dois espias fiéis (ao lado de Calebe) que saíram do Egito e entraram na Terra Prometida."
+      },
+      {
+        name: "Davi",
+        subtitle: "Segundo rei de Israel e salmista",
+        era: "Monarquia Unida",
+        birthAM: 2919,
+        deathAM: 2989,
+        age: 70,
+        birthBC: "~1085 a.C.",
+        deathBC: "~1015 a.C.",
+        reference: "2 Samuel 5:4",
+        verse: "Da idade de trinta anos era Davi quando começou a reinar; quarenta anos reinou.",
+        note: "Reinou 7 anos e meio em Hebrom sobre Judá e 33 anos em Jerusalém sobre todo o Israel, totalizando 70 anos de vida."
+      }
+    ];
+
+    // Configurações dimensionais e visuais do SVG vetorial
+    const svgNS = "http://www.w3.org/2000/svg";
+    const config = {
+      width: 1120,
+      marginTop: 42,
+      marginRight: 45,
+      marginBottom: 62,
+      marginLeft: 128,
+      rowHeight: 27,
+      barHeight: 16,
+      maxYears: 3000, // Escala limpa de 0 a 3000 AM para acomodar fielmente até Davi (2989 AM)
+      floodYear: 1656
+    };
+
+    // Paletas de cores do gráfico (claro e escuro)
+    const PALETTES = {
+      claro: {
+        bg: "#ffffff", title: "#0f172a", gridZero: "#334155", gridMajor: "#cbd5e1", gridMinor: "#e2e8f0",
+        axis: "#334155", axisLabel: "#1e293b", caption: "#475569", flood: "#1d63dc", floodText: "#1d4ed8",
+        highlight: "#f1f5f9", name: "#1e3a8a", bar: "#b4e37c", barStroke: "#96cb58", barText: "#1e293b", outsideText: "#1e293b"
+      },
+      escuro: {
+        bg: "#0f172a", title: "#f1f5f9", gridZero: "#94a3b8", gridMajor: "#334155", gridMinor: "#1e293b",
+        axis: "#94a3b8", axisLabel: "#e2e8f0", caption: "#94a3b8", flood: "#60a5fa", floodText: "#93c5fd",
+        highlight: "#1e293b", name: "#93c5fd", bar: "#b4e37c", barStroke: "#96cb58", barText: "#1e293b", outsideText: "#e2e8f0"
+      }
+    };
+
+    function currentPalette() {
+      return document.documentElement.classList.contains("dark") ? PALETTES.escuro : PALETTES.claro;
+    }
+
+    const chartWidth = config.width - config.marginLeft - config.marginRight;
+    const chartHeight = characters.length * config.rowHeight;
+    const totalHeight = config.marginTop + chartHeight + config.marginBottom;
+
+    function scaleX(year) {
+      return config.marginLeft + (year / config.maxYears) * chartWidth;
+    }
+
+    function createSvgElement(tag, attrs = {}) {
+      const el = document.createElementNS(svgNS, tag);
+      for (const [key, val] of Object.entries(attrs)) {
+        el.setAttribute(key, val);
+      }
+      return el;
+    }
+
+    // Monta o SVG com a paleta indicada (interactive = com cliques e hover)
+    function buildSvg(P, interactive) {
+      const svg = createSvgElement("svg", {
+        id: interactive ? "timelineSvg" : "timelineSvgExport",
+        viewBox: `0 0 ${config.width} ${totalHeight}`,
+        width: "100%",
+        height: "auto",
+        role: "img",
+        "aria-label": "Gráfico cronológico da longevidade dos personagens bíblicos"
+      });
+
+      // Fundo explícito (essencial para exportação PNG limpa)
+      svg.appendChild(createSvgElement("rect", {
+        x: 0, y: 0, width: config.width, height: totalHeight, fill: P.bg
+      }));
+
+      // Título interno no topo do SVG (para ficar completo também ao baixar como imagem)
+      const svgTitle = createSvgElement("text", {
+        x: config.marginLeft + chartWidth / 2,
+        y: 24,
+        "text-anchor": "middle",
+        fill: P.title,
+        "font-family": "Inter, sans-serif",
+        "font-size": "15",
+        "font-weight": "700"
+      });
+      svgTitle.textContent = "Cronologia Bíblica — Longevidade dos Patriarcas e Personagens (Anno Mundi)";
+      svg.appendChild(svgTitle);
+
+      // 1. Linhas de grade verticais (a cada 100 anos) e rótulos do eixo X (a cada 500 anos)
+      for (let year = 0; year <= config.maxYears; year += 100) {
+        const x = scaleX(year);
+        const isMajor = year % 500 === 0;
+
+        svg.appendChild(createSvgElement("line", {
+          x1: x, y1: config.marginTop, x2: x, y2: config.marginTop + chartHeight,
+          stroke: year === 0 ? P.gridZero : isMajor ? P.gridMajor : P.gridMinor,
+          "stroke-width": year === 0 ? "1.4" : isMajor ? "1.1" : "0.8"
+        }));
+
+        svg.appendChild(createSvgElement("line", {
+          x1: x, y1: config.marginTop + chartHeight,
+          x2: x, y2: config.marginTop + chartHeight + (isMajor ? 6 : 3.5),
+          stroke: P.axis,
+          "stroke-width": isMajor ? "1.2" : "0.9"
+        }));
+
+        if (isMajor) {
+          const xLabel = createSvgElement("text", {
+            x: x,
+            y: config.marginTop + chartHeight + 21,
+            "text-anchor": "middle",
+            fill: P.axisLabel,
+            "font-family": "Inter, sans-serif",
+            "font-size": "12.5",
+            "font-weight": "500"
+          });
+          xLabel.textContent = year.toString();
+          svg.appendChild(xLabel);
+        }
+      }
+
+      // Título do eixo X
+      const xAxisCaption = createSvgElement("text", {
+        x: config.marginLeft + chartWidth / 2,
+        y: config.marginTop + chartHeight + 44,
+        "text-anchor": "middle",
+        fill: P.caption,
+        "font-family": "Inter, sans-serif",
+        "font-size": "12",
+        "font-weight": "600"
+      });
+      xAxisCaption.textContent = "Anos após a Criação (Anno Mundi — AM)";
+      svg.appendChild(xAxisCaption);
+
+      // Eixo X horizontal base
+      svg.appendChild(createSvgElement("line", {
+        x1: config.marginLeft, y1: config.marginTop + chartHeight,
+        x2: config.marginLeft + chartWidth, y2: config.marginTop + chartHeight,
+        stroke: P.axis, "stroke-width": "1.3"
+      }));
+
+      // 2. Linha vertical do Dilúvio (Ano 1656 AM)
+      const floodX = scaleX(config.floodYear);
+      svg.appendChild(createSvgElement("line", {
+        x1: floodX, y1: config.marginTop, x2: floodX, y2: config.marginTop + chartHeight,
+        stroke: P.flood, "stroke-width": "1.6"
+      }));
+
+      const floodLabelY = config.marginTop + 19 * config.rowHeight + 17;
+      const floodText = createSvgElement("text", {
+        x: floodX - 8,
+        y: floodLabelY,
+        "text-anchor": "end",
+        fill: P.floodText,
+        "font-family": "Inter, sans-serif",
+        "font-size": "13.5",
+        "font-weight": "600"
+      });
+      floodText.textContent = "Dilúvio, 1656 Anno Mundi >";
+      svg.appendChild(floodText);
+
+      // 3. Linhas e barras dos personagens
+      characters.forEach((char, index) => {
+        const yRowTop = config.marginTop + index * config.rowHeight;
+        const yBarTop = yRowTop + (config.rowHeight - config.barHeight) / 2;
+        const yTextCenter = yRowTop + config.rowHeight / 2 + 4.2;
+
+        const xStart = scaleX(char.birthAM);
+        const rawWidth = ((char.deathAM - char.birthAM) / config.maxYears) * chartWidth;
+        const barW = Math.max(rawWidth, 16); // largura mínima clicável
+
+        const group = createSvgElement("g", interactive ? {
+          class: "character-row",
+          tabindex: "0",
+          role: "button",
+          "aria-label": `${char.name}, viveu ${char.age} anos. Clique para ver detalhes bíblicos.`
+        } : {});
+
+        if (interactive) {
+          group.appendChild(createSvgElement("rect", {
+            class: "row-highlight",
+            x: 6, y: yRowTop + 1, width: config.width - 12, height: config.rowHeight - 2,
+            rx: 5, fill: P.highlight, opacity: "0"
+          }));
+        }
+
+        const nameLabel = createSvgElement("text", {
+          class: "char-label",
+          x: config.marginLeft - 12,
+          y: yTextCenter,
+          "text-anchor": "end",
+          fill: P.name,
+          "font-family": "Inter, sans-serif",
+          "font-size": "12.8",
+          "font-weight": "500"
+        });
+        nameLabel.textContent = char.name;
+        group.appendChild(nameLabel);
+
+        group.appendChild(createSvgElement("rect", {
+          class: "bar-rect",
+          x: xStart, y: yBarTop, width: barW, height: config.barHeight,
+          rx: 2.5, fill: P.bar, stroke: P.barStroke, "stroke-width": "0.8"
+        }));
+
+        const isWideEnoughForText = barW >= 82;
+        const isMediumForNumber = barW >= 28;
+
+        const durationText = createSvgElement("text", {
+          "font-family": "Inter, sans-serif",
+          "font-size": "12",
+          "font-weight": "600",
+          fill: P.barText,
+          y: yTextCenter
+        });
+
+        if (isWideEnoughForText) {
+          durationText.setAttribute("x", xStart + barW / 2);
+          durationText.setAttribute("text-anchor", "middle");
+          durationText.textContent = `${char.age} anos`;
+        } else if (isMediumForNumber) {
+          durationText.setAttribute("x", xStart + barW / 2);
+          durationText.setAttribute("text-anchor", "middle");
+          durationText.textContent = `${char.age}`;
+        } else {
+          // Barras muito estreitas (ex.: Davi = 70 anos): número logo à direita da barra
+          durationText.setAttribute("x", xStart + barW + 5);
+          durationText.setAttribute("text-anchor", "start");
+          durationText.setAttribute("fill", P.outsideText);
+          durationText.textContent = `${char.age} anos`;
+        }
+        group.appendChild(durationText);
+
+        if (interactive) {
+          group.addEventListener("click", () => openCharacterModal(index));
+          group.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openCharacterModal(index);
+            }
+          });
+        }
+
+        svg.appendChild(group);
+      });
+
+      return svg;
+    }
+
+    function renderChart() {
+      const container = document.getElementById("svgContainer");
+      container.innerHTML = "";
+      container.appendChild(buildSvg(currentPalette(), true));
+    }
+
+
+    // Controle do Modal / Box Popup
+    let currentIndex = 0;
+    const modal = document.getElementById("characterModal");
+    const btnCloseModal = document.getElementById("btnCloseModal");
+    const btnCloseFooter = document.getElementById("btnCloseFooter");
+    const btnPrevChar = document.getElementById("btnPrevChar");
+    const btnNextChar = document.getElementById("btnNextChar");
+
+    function openCharacterModal(index) {
+      currentIndex = index;
+      const c = characters[index];
+
+      document.getElementById("modalIndexBadge").textContent = `Personagem ${index + 1} de ${characters.length}`;
+      document.getElementById("modalEraBadge").textContent = c.era;
+      document.getElementById("modalTitle").textContent = c.name;
+      document.getElementById("modalAgeBadge").textContent = `${c.age} anos`;
+      document.getElementById("modalSubtitle").textContent = c.subtitle;
+
+      document.getElementById("modalBirthAM").textContent = `Ano ${c.birthAM} AM`;
+      document.getElementById("modalBirthBC").textContent = c.birthBC;
+
+      document.getElementById("modalDeathLabel").textContent = c.deathLabel || "Morte Aprox.";
+      document.getElementById("modalDeathDot").className = c.deathLabel
+        ? "w-2 h-2 rounded-full bg-sky-500"
+        : "w-2 h-2 rounded-full bg-rose-500";
+      document.getElementById("modalDeathAM").textContent = `Ano ${c.deathAM} AM`;
+      document.getElementById("modalDeathBC").textContent = c.deathBC;
+
+      document.getElementById("modalReference").textContent = c.reference;
+      document.getElementById("modalVerse").textContent = `"${c.verse}"`;
+      document.getElementById("modalNote").textContent = c.note;
+
+      btnPrevChar.disabled = index === 0;
+      btnNextChar.disabled = index === characters.length - 1;
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeCharacterModal() {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      document.body.style.overflow = "";
+    }
+
+    btnCloseModal.addEventListener("click", closeCharacterModal);
+    btnCloseFooter.addEventListener("click", closeCharacterModal);
+
+    // Fechar ao clicar no fundo escuro fora do card
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        closeCharacterModal();
+      }
+    });
+
+    // Navegação anterior / próximo e atalhos de teclado
+    btnPrevChar.addEventListener("click", () => {
+      if (currentIndex > 0) openCharacterModal(currentIndex - 1);
+    });
+
+    btnNextChar.addEventListener("click", () => {
+      if (currentIndex < characters.length - 1) openCharacterModal(currentIndex + 1);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (modal.classList.contains("hidden")) return;
+      if (e.key === "Escape") closeCharacterModal();
+      if (e.key === "ArrowLeft" && currentIndex > 0) openCharacterModal(currentIndex - 1);
+      if (e.key === "ArrowRight" && currentIndex < characters.length - 1) openCharacterModal(currentIndex + 1);
+    });
+
+    // Exportação PNG em alta resolução (3x) — sempre em fundo claro, ideal para impressão e slides
+    function showToast(message) {
+      const toast = document.getElementById("toastMsg");
+      document.getElementById("toastText").textContent = message;
+      toast.classList.remove("hidden");
+      toast.classList.add("flex");
+      setTimeout(() => {
+        toast.classList.add("hidden");
+        toast.classList.remove("flex");
+      }, 3200);
+    }
+
+    document.getElementById("btnDownloadPng").addEventListener("click", () => {
+      const svgEl = buildSvg(PALETTES.claro, false);
+      svgEl.setAttribute("width", config.width);
+      svgEl.setAttribute("height", totalHeight);
+
+      const scaleFactor = 3; // 3360px de largura (altíssima resolução)
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svgEl);
+
+      if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+
+      const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = config.width * scaleFactor;
+        canvas.height = totalHeight * scaleFactor;
+
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob((blob) => {
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = "cronologia-biblica-alta-resolucao.png";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(downloadUrl);
+          showToast("Gráfico PNG em alta resolução baixado!");
+        }, "image/png");
+      };
+      img.src = url;
+    });
+
+    // ===== Tema claro / escuro (sol / lua) =====
+    document.getElementById("btnTheme").addEventListener("click", () => {
+      const escuro = document.documentElement.classList.toggle("dark");
+      try { localStorage.setItem("cronologia-tema", escuro ? "escuro" : "claro"); } catch (e) {}
+      renderChart();
+    });
+
+    // ===== Versão e atualização do app =====
+    document.getElementById("versionBadge").textContent = "v" + APP_VERSION;
+    document.getElementById("versionFooter").textContent = "• Versão " + APP_VERSION;
+
+    // Limpa cache e service worker e recarrega a versão mais nova
+    async function atualizarAgora() {
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch (e) {}
+      const base = location.href.split("?")[0].split("#")[0];
+      location.replace(base + "?atualizado=" + Date.now());
+    }
+
+    // Lê o próprio arquivo publicado e compara com a versão que está rodando
+    async function verificarVersaoNova() {
+      if (location.protocol === "file:") return;
+      try {
+        const resp = await fetch("./index.html?checar=" + Date.now(), { cache: "no-store" });
+        if (!resp.ok) return;
+        const texto = await resp.text();
+        const m = texto.match(/const APP_VERSION = "([^"]+)"/);
+        if (m && m[1] !== APP_VERSION) {
+          document.getElementById("updateBannerText").textContent =
+            `Há uma versão nova do app (v${m[1]}). Você está na v${APP_VERSION}.`;
+          const banner = document.getElementById("updateBanner");
+          banner.classList.remove("hidden");
+          banner.classList.add("flex");
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById("btnUpdateNow").addEventListener("click", atualizarAgora);
+    document.getElementById("btnUpdateManual").addEventListener("click", () => {
+      showToast("Atualizando o app…");
+      setTimeout(atualizarAgora, 400);
+    });
+
+    // Service worker (permite instalar como app e abrir sem internet)
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+    // Inicializa o gráfico ao carregar e verifica atualização
+    window.addEventListener("DOMContentLoaded", () => {
+      renderChart();
+      verificarVersaoNova();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") verificarVersaoNova();
+    });
+  </script>
+</body>
+</html>
