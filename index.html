@@ -94,6 +94,26 @@
     }
     html.dark .chart-scroll::-webkit-scrollbar-track { background: #1e293b; }
     html.dark .chart-scroll::-webkit-scrollbar-thumb { background: #475569; }
+    /* Linhas dos livros */
+    .book-row { cursor: pointer; }
+    .book-row:hover .row-highlight, .book-row:focus .row-highlight { opacity: 1; }
+    .book-row:hover .book-label { font-weight: 700; }
+    .book-row:focus { outline: none; }
+    /* Botões segmentados e abas */
+    .seg-group { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 0.75rem; overflow: hidden; }
+    .seg-group button { padding: 0.4rem 0.8rem; font-size: 0.85rem; font-weight: 500; color: #334155; background: #fff; cursor: pointer; }
+    .seg-group button + button { border-left: 1px solid #cbd5e1; }
+    .seg-group button.seg-ativo { background: #0f172a; color: #fff; }
+    html.dark .seg-group { border-color: #334155; }
+    html.dark .seg-group button { background: #1e293b; color: #cbd5e1; }
+    html.dark .seg-group button + button { border-left-color: #334155; }
+    html.dark .seg-group button.seg-ativo { background: #a3e635; color: #0f172a; }
+    .tab-btn { padding: 0.55rem 1rem; font-size: 0.9rem; font-weight: 600; border-radius: 0.75rem; color: #475569; cursor: pointer; }
+    .tab-btn:hover { background: #e2e8f0; }
+    .tab-btn.tab-ativa { background: #0f172a; color: #fff; }
+    html.dark .tab-btn { color: #94a3b8; }
+    html.dark .tab-btn:hover { background: #1e293b; }
+    html.dark .tab-btn.tab-ativa { background: #a3e635; color: #0f172a; }
     /* Respeita a área do "notch" quando aberto como app no iPhone/iPad */
     header { padding-top: env(safe-area-inset-top); }
   </style>
@@ -113,13 +133,13 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
         <div class="flex items-center gap-2">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-lime-100 text-lime-800 border border-lime-300 dark:bg-lime-900/40 dark:text-lime-300 dark:border-lime-700">
+          <span id="pageBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-lime-100 text-lime-800 border border-lime-300 dark:bg-lime-900/40 dark:text-lime-300 dark:border-lime-700">
             Anno Mundi (Anos após a Criação)
           </span>
           <span class="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">• Cronologia Bíblica</span>
           <span id="versionBadge" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-md">v—</span>
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
+        <h1 id="pageTitle" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
           Longevidade dos Patriarcas e Personagens Bíblicos
         </h1>
       </div>
@@ -159,7 +179,7 @@
         <button
           id="btnDownloadPng"
           type="button"
-          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.99] transition shadow-sm cursor-pointer"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-[0.99] transition shadow-sm cursor-pointer"
           title="Salvar gráfico em imagem PNG de alta definição"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -173,6 +193,15 @@
 
   <!-- Conteúdo Principal -->
   <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 flex-1">
+
+    <!-- Abas -->
+    <div class="mb-4 inline-flex gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800" role="tablist">
+      <button id="tabPersonagens" type="button" class="tab-btn tab-ativa" role="tab">Personagens</button>
+      <button id="tabLivros" type="button" class="tab-btn" role="tab">Livros da Bíblia</button>
+    </div>
+
+    <!-- ================= ABA PERSONAGENS ================= -->
+    <div id="viewPersonagens">
 
     <!-- Barra de Dica Interativa -->
     <div class="mb-4 bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm text-blue-900 dark:text-blue-200">
@@ -215,6 +244,57 @@
           Escala baseada na cronologia bíblica tradicional (Texto Massorético / Anno Mundi).
           <span id="versionFooter" class="ml-1 font-semibold"></span>
         </p>
+      </div>
+    </div>
+    </div>
+    <!-- ================= ABA LIVROS ================= -->
+    <div id="viewLivros" class="hidden">
+
+      <!-- Controles -->
+      <div class="mb-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3.5 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 text-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Datação</span>
+          <div class="seg-group">
+            <button type="button" data-modo="trad">Tradicional</button>
+            <button type="button" data-modo="crit">Crítica</button>
+            <button type="button" data-modo="comp">Comparar</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ordem</span>
+          <div class="seg-group">
+            <button type="button" data-ordem="canon">Do cânon</button>
+            <button type="button" data-ordem="comp">De composição</button>
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
+          <input id="chkDeutero" type="checkbox" class="w-4 h-4 accent-purple-600" />
+          <span>Mostrar deuterocanônicos</span>
+        </label>
+      </div>
+
+      <!-- Como ler -->
+      <details class="mb-4 bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 text-sm text-blue-950 dark:text-blue-100">
+        <summary class="cursor-pointer font-semibold select-none">Como ler este gráfico (toque para abrir)</summary>
+        <div class="mt-3 space-y-2.5 leading-relaxed">
+          <p><strong>Três fases.</strong> Muitos livros não nasceram prontos. A faixa <em>esmaecida</em> representa a tradição oral e as fontes anteriores (registros, genealogias, crônicas); a faixa <em>sólida</em>, a composição escrita; e o <em>círculo</em>, o momento em que o livro chegou à forma final.</p>
+          <p><strong>Datação tradicional.</strong> Aceita a autoria indicada pelo próprio texto e pela tradição judaico-cristã (Moisés, Davi, Salomão, os profetas, os apóstolos) e situa a escrita próxima aos acontecimentos narrados. É a posição das introduções bíblicas conservadoras.</p>
+          <p><strong>Datação crítica.</strong> Segue o consenso histórico-crítico predominante na academia. Analisa linguagem, estilo e contexto histórico e entende que vários livros passaram por longos processos de transmissão, compilação e edição, chegando à forma final séculos depois dos eventos. Estudiosos conservadores contestam boa parte dessas conclusões.</p>
+          <p><strong>Onde concordam e onde divergem.</strong> Use “Comparar”: as duas leituras quase coincidem nos profetas do século VIII–VI a.C. (Amós, Oseias, Miqueias, Jeremias, Ezequiel, Ageu) e nas principais cartas de Paulo; afastam-se muito no Pentateuco, em Daniel, Isaías, nos livros de sabedoria e nas cartas Pastorais e 2 Pedro.</p>
+          <p><strong>Data dos eventos x data da escrita.</strong> Jó se passa na era patriarcal, mas não foi necessariamente escrito nela. E, nas duas leituras, as primeiras cartas de Paulo foram escritas antes dos evangelhos — use a ordem “De composição” para ver isso.</p>
+          <p class="text-xs opacity-80">Todas as datas são aproximadas (c.). Os marcos históricos (linhas tracejadas) ajudam a situar cada livro.</p>
+        </div>
+      </details>
+
+      <!-- Gráfico -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="chart-scroll overflow-x-auto p-3 sm:p-6">
+          <div id="booksSvgContainer" class="min-w-[860px] w-full flex justify-center"></div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 text-xs text-slate-600 dark:text-slate-400 space-y-2">
+          <div id="booksLegend" class="flex flex-wrap items-center gap-x-4 gap-y-2"></div>
+          <p class="text-slate-500 dark:text-slate-400">Toque em um livro para ver as duas datações, a autoria tradicional e a evidência interna.</p>
+        </div>
       </div>
     </div>
   </main>
@@ -353,6 +433,63 @@
     </div>
   </div>
 
+  <!-- Box / Modal do Livro -->
+  <div id="bookModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="bookTitle">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-modal max-h-[92vh] overflow-y-auto">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 px-6 py-5 text-white relative">
+        <button id="btnCloseBook" type="button" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" aria-label="Fechar janela">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-lime-300 mb-1 pr-10">
+          <span id="bookIndexBadge">Livro 1</span>
+          <span>•</span>
+          <span class="inline-flex items-center gap-1.5"><span id="bookGroupDot" class="w-2.5 h-2.5 rounded-full inline-block"></span><span id="bookGroupBadge"></span></span>
+        </div>
+        <h2 id="bookTitle" class="text-2xl sm:text-3xl font-bold tracking-tight text-white pr-8">Gênesis</h2>
+        <p id="bookAuthor" class="text-slate-300 text-sm mt-1"></p>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="rounded-xl p-4 border border-amber-300/80 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30">
+            <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full" style="background:#ca8a04"></span>Datação tradicional
+            </div>
+            <div id="bookTradRange" class="text-lg font-bold text-slate-900 dark:text-white"></div>
+            <div id="bookTradOral" class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5"></div>
+            <p id="bookTradNote" class="text-sm text-slate-700 dark:text-slate-200 mt-2 leading-relaxed"></p>
+          </div>
+          <div class="rounded-xl p-4 border border-sky-300/80 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/30">
+            <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-sky-800 dark:text-sky-300 mb-1">
+              <span class="w-2.5 h-2.5 rounded-full" style="background:#0284c7"></span>Datação crítica
+            </div>
+            <div id="bookCritRange" class="text-lg font-bold text-slate-900 dark:text-white"></div>
+            <div id="bookCritOral" class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5"></div>
+            <p id="bookCritNote" class="text-sm text-slate-700 dark:text-slate-200 mt-2 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <div id="bookRefBox" class="flex items-center gap-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          <span class="font-semibold text-slate-700 dark:text-slate-200">Textos de apoio:</span>
+          <span id="bookRef" class="text-slate-600 dark:text-slate-300"></span>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button id="btnPrevBook" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <span>Anterior</span>
+          </button>
+          <button id="btnCloseBookFooter" type="button" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">Fechar</button>
+          <button id="btnNextBook" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+            <span>Próximo</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast de Feedback (Exportação PNG) -->
   <div id="toastMsg" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-slate-700 items-center gap-2.5">
     <span class="w-2.5 h-2.5 rounded-full bg-lime-400"></span>
@@ -361,7 +498,7 @@
 
   <script>
     // Versão do app — aumente este número a cada atualização publicada no GitHub
-    const APP_VERSION = "1.0.0";
+    const APP_VERSION = "1.1.0";
 
     // Dados completos dos 27 personagens bíblicos em português
     // Escala Anno Mundi (AM) a partir da Criação (0 AM ≈ 4004 a.C. na cronologia bíblica clássica)
@@ -1050,9 +1187,12 @@
     }
 
     document.getElementById("btnDownloadPng").addEventListener("click", () => {
-      const svgEl = buildSvg(PALETTES.claro, false);
-      svgEl.setAttribute("width", config.width);
-      svgEl.setAttribute("height", totalHeight);
+      const livros = currentView === "livros";
+      const svgEl = livros ? buildBooksSvg(PALETTES.claro, false) : buildSvg(PALETTES.claro, false);
+      const expW = config.width;
+      const expH = livros ? Number(svgEl.dataset.h) : totalHeight;
+      svgEl.setAttribute("width", expW);
+      svgEl.setAttribute("height", expH);
 
       const scaleFactor = 3; // 3360px de largura (altíssima resolução)
       const serializer = new XMLSerializer();
@@ -1068,8 +1208,8 @@
       const img = new Image();
       img.onload = function () {
         const canvas = document.createElement("canvas");
-        canvas.width = config.width * scaleFactor;
-        canvas.height = totalHeight * scaleFactor;
+        canvas.width = expW * scaleFactor;
+        canvas.height = expH * scaleFactor;
 
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "#ffffff";
@@ -1082,7 +1222,7 @@
           const downloadUrl = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = downloadUrl;
-          link.download = "cronologia-biblica-alta-resolucao.png";
+          link.download = livros ? "datacao-livros-biblicos.png" : "cronologia-biblica-alta-resolucao.png";
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -1093,11 +1233,524 @@
       img.src = url;
     });
 
+    // =====================================================================
+    //  LIVROS DA BÍBLIA — Datação tradicional x crítica
+    //  Cada datação: [início da composição, fim/forma final, início da tradição oral/fontes (opcional)]
+    //  Anos negativos = a.C. | positivos = d.C.
+    // =====================================================================
+    const BOOK_GROUPS = {
+      pent:   { nome: "Pentateuco",           cor: "#dc2626" },
+      hist:   { nome: "Históricos",           cor: "#ea580c" },
+      poes:   { nome: "Poesia e Sabedoria",   cor: "#16a34a" },
+      pmai:   { nome: "Profetas Maiores",     cor: "#4f46e5" },
+      pmen:   { nome: "Profetas Menores",     cor: "#0891b2" },
+      deut:   { nome: "Deuterocanônicos",     cor: "#a855f7" },
+      evan:   { nome: "Evangelhos",           cor: "#4f46e5" },
+      atos:   { nome: "Histórico",            cor: "#a855f7" },
+      paulo:  { nome: "Cartas de Paulo",      cor: "#16a34a" },
+      gerais: { nome: "Cartas Gerais",        cor: "#ea580c" },
+      prof:   { nome: "Profético",            cor: "#dc2626" }
+    };
+    const MODE_COLORS = { trad: "#ca8a04", crit: "#0284c7" };
+    const MODE_NAMES = { trad: "Datação tradicional", crit: "Datação crítica" };
+
+    const NC_IGUAL = "Datação semelhante à tradicional.";
+    const NC_DH = "Parte da chamada 'História Deuteronomista' (Josué a 2 Reis), compilada durante o exílio a partir de fontes e crônicas muito mais antigas.";
+    const NC_TORA = "Reúne tradições orais e fontes escritas que remontam aos séculos X–VIII a.C.; a compilação final do Pentateuco (Torá) é situada no período persa.";
+    const NC_CRON = "Obra do 'Cronista', que reconta a história de Israel sob a ótica sacerdotal pós-exílica, usando Samuel–Reis como fonte.";
+    const NC_PAST = "As 'Epístolas Pastorais' refletem uma organização eclesiástica mais desenvolvida; muitos estudiosos críticos as atribuem a um seguidor de Paulo.";
+    const N_DEUT = "Presente nas Bíblias católica e ortodoxa; não faz parte do cânon hebraico nem do protestante. A datação é praticamente a mesma nas duas leituras.";
+
+    const BOOKS = [
+      // ---------------- ANTIGO TESTAMENTO ----------------
+      { t: "AT", n: "Gênesis", g: "pent", a: "Moisés", tr: [-1446, -1406, -2100], cr: [-500, -400, -1000], ref: "Gn 5:1",
+        nt: "Moisés teria registrado as tradições patriarcais, transmitidas oralmente (e talvez em registros de família, as 'gerações'), durante a peregrinação no deserto.", nc: NC_TORA },
+      { t: "AT", n: "Êxodo", g: "pent", a: "Moisés", tr: [-1446, -1406], cr: [-500, -400, -1000], ref: "Êx 17:14; 24:4",
+        nt: "Escrito durante as peregrinações; o próprio texto menciona Moisés escrevendo por ordem de Deus.", nc: NC_TORA },
+      { t: "AT", n: "Levítico", g: "pent", a: "Moisés", tr: [-1445, -1444], cr: [-500, -400, -1000], ref: "Lv 1:1; 27:34",
+        nt: "Legislação recebida no Sinai, no intervalo de cerca de um ano entre a montagem do tabernáculo e a partida.", nc: "Associado à chamada tradição sacerdotal, fixada por escrito no exílio e no pós-exílio." },
+      { t: "AT", n: "Números", g: "pent", a: "Moisés", tr: [-1444, -1406], cr: [-500, -400, -1000], ref: "Nm 33:2",
+        nt: "Registra os anos de peregrinação; o texto afirma que Moisés anotou as etapas da jornada.", nc: NC_TORA },
+      { t: "AT", n: "Deuteronômio", g: "pent", a: "Moisés", tr: [-1407, -1406], cr: [-622, -550, -750], ref: "Dt 31:9,24; 2Rs 22:8",
+        nt: "Discursos de Moisés nas planícies de Moabe, pouco antes de sua morte; o relato da morte (cap. 34) é tradicionalmente atribuído a Josué.", nc: "Seu núcleo é associado ao 'livro da Lei' encontrado no templo na reforma de Josias (622 a.C.), com edições posteriores no exílio." },
+      { t: "AT", n: "Josué", g: "hist", a: "Josué (com acréscimos posteriores)", tr: [-1400, -1370], cr: [-560, -550, -1000], ref: "Js 24:26",
+        nt: "Escrito por Josué; o registro de sua morte teria sido acrescentado depois (talvez por Eleazar ou Fineias).", nc: NC_DH },
+      { t: "AT", n: "Juízes", g: "hist", a: "Samuel (tradição judaica)", tr: [-1050, -1000], cr: [-560, -550, -1000], ref: "Jz 17:6; 21:25",
+        nt: "A expressão 'naqueles dias não havia rei em Israel' sugere escrita no início da monarquia.", nc: NC_DH },
+      { t: "AT", n: "Rute", g: "hist", a: "Desconhecido (Samuel, segundo o Talmude)", tr: [-1050, -970], cr: [-450, -400], ref: "Rt 4:17-22",
+        nt: "A genealogia final termina em Davi, o que sugere escrita durante ou logo após o seu reinado.", nc: "Muitos estudiosos o situam no pós-exílio, possivelmente dialogando com a questão dos casamentos mistos (Esdras–Neemias)." },
+      { t: "AT", n: "1 Samuel", g: "hist", a: "Samuel, Natã e Gade", tr: [-1050, -930], cr: [-560, -550, -1000], ref: "1Cr 29:29",
+        nt: "1 Crônicas menciona os registros de Samuel, Natã e Gade; a forma final é posterior à divisão do reino.", nc: NC_DH },
+      { t: "AT", n: "2 Samuel", g: "hist", a: "Samuel, Natã e Gade", tr: [-1010, -930], cr: [-560, -550, -1000], ref: "1Cr 29:29; 2Sm 1:18",
+        nt: "Narra o reinado de Davi, com base em registros proféticos contemporâneos.", nc: NC_DH },
+      { t: "AT", n: "1 Reis", g: "hist", a: "Desconhecido (Jeremias, segundo o Talmude)", tr: [-561, -538, -970], cr: [-560, -550, -1000], ref: "1Rs 11:41; 14:19,29",
+        nt: "Compilado no exílio a partir de fontes citadas no próprio texto, como o 'Livro da História de Salomão' e as crônicas dos reis.", nc: NC_DH },
+      { t: "AT", n: "2 Reis", g: "hist", a: "Desconhecido (Jeremias, segundo o Talmude)", tr: [-561, -538, -930], cr: [-560, -550, -1000], ref: "2Rs 25:27-30",
+        nt: "O último evento narrado é a libertação do rei Joaquim na Babilônia (c. 561 a.C.).", nc: NC_DH },
+      { t: "AT", n: "1 Crônicas", g: "hist", a: "Esdras (tradição judaica)", tr: [-450, -430, -1000], cr: [-400, -300, -560], ref: "1Cr 29:29",
+        nt: "Escrito após o retorno do exílio, com base em genealogias e registros oficiais, para reafirmar a linhagem davídica e o culto no templo.", nc: NC_CRON },
+      { t: "AT", n: "2 Crônicas", g: "hist", a: "Esdras (tradição judaica)", tr: [-450, -430, -1000], cr: [-400, -300, -560], ref: "2Cr 36:22-23",
+        nt: "Termina com o edito de Ciro, que autoriza o retorno dos exilados.", nc: NC_CRON },
+      { t: "AT", n: "Esdras", g: "hist", a: "Esdras", tr: [-450, -430], cr: [-400, -300], ref: "Ed 7:1-10,27-28",
+        nt: "Esdras chegou a Jerusalém em 457 a.C.; parte do livro são memórias em primeira pessoa.", nc: "Considerado parte da obra do Cronista (Crônicas, Esdras e Neemias)." },
+      { t: "AT", n: "Neemias", g: "hist", a: "Neemias", tr: [-445, -420], cr: [-400, -300], ref: "Ne 1:1; 13:6",
+        nt: "Memórias de Neemias, governador de Judá a partir de 445 a.C.", nc: "Incorporado à obra do Cronista." },
+      { t: "AT", n: "Ester", g: "hist", a: "Desconhecido (Mardoqueu, segundo a tradição)", tr: [-470, -400], cr: [-300, -200], ref: "Et 10:2-3",
+        nt: "Escrito após o reinado de Xerxes (Assuero, 486–465 a.C.) por alguém familiarizado com a corte persa.", nc: "Situado no período helenístico." },
+      { t: "AT", n: "Jó", g: "poes", a: "Desconhecido", tr: [-1500, -950, -2000], cr: [-500, -400, -800], ref: "Jó 1:1-3; 42:16-17",
+        nt: "A história se passa na era patriarcal; a data da escrita é incerta. A tradição judaica a atribuiu a Moisés, e outros a situam na época de Salomão.", nc: "Possui uma moldura narrativa antiga, mas os diálogos poéticos refletem o período pós-exílico." },
+      { t: "AT", n: "Salmos", g: "poes", a: "Davi, Asafe, filhos de Corá, Salomão, Moisés e outros", tr: [-1440, -430], cr: [-400, -300, -1000], ref: "Sl 90 (título); Sl 137:1",
+        nt: "Composto ao longo de cerca de mil anos, do Salmo 90 (Moisés) aos salmos do exílio, e organizado em cinco livros.", nc: "Compilação final do saltério em cinco livros, reunindo hinos que vão do século X a.C. ao pós-exílio." },
+      { t: "AT", n: "Provérbios", g: "poes", a: "Salomão, homens de Ezequias, Agur e Lemuel", tr: [-970, -686], cr: [-450, -350, -950], ref: "Pv 1:1; 25:1; 30:1; 31:1",
+        nt: "Provérbios de Salomão (séc. X a.C.), copiados e organizados pelos homens de Ezequias (c. 715–686 a.C.), com acréscimos de Agur e Lemuel.", nc: "Coletânea final pós-exílica, com material muito antigo, parte dele da corte de Salomão." },
+      { t: "AT", n: "Eclesiastes", g: "poes", a: "Salomão", tr: [-940, -931], cr: [-300, -250], ref: "Ec 1:1,12",
+        nt: "O 'Pregador, filho de Davi, rei em Jerusalém' é tradicionalmente identificado com Salomão, escrevendo no fim da vida.", nc: "Situado no período helenístico, em diálogo com a filosofia grega; o 'Pregador' (Coélet) seria uma figura literária." },
+      { t: "AT", n: "Cantares", g: "poes", a: "Salomão", tr: [-970, -950], cr: [-350, -300], ref: "Ct 1:1",
+        nt: "Atribuído a Salomão, provavelmente no início do seu reinado.", nc: "Datado no período persa ou helenístico pela linguagem (aramaísmos e termos estrangeiros)." },
+      { t: "AT", n: "Isaías", g: "pmai", a: "Isaías", tr: [-740, -680], cr: [-740, -500], ref: "Is 1:1; 37:38; Jo 12:38-41",
+        nt: "Profetizou de Uzias a Ezequias e registra a morte de Senaqueribe (681 a.C.). A unidade do livro é defendida, entre outros argumentos, por João 12:38-41, que cita as duas partes como de Isaías.", nc: "Dividido em três partes: Primeiro Isaías (caps. 1–39, c. 740–700 a.C.), Segundo Isaías (40–55, c. 550–539 a.C.) e Terceiro Isaías (56–66, c. 530–500 a.C.)." },
+      { t: "AT", n: "Jeremias", g: "pmai", a: "Jeremias (por meio de Baruque)", tr: [-627, -580], cr: [-626, -580], ref: "Jr 36:1-4,32",
+        nt: "Ditou suas profecias a Baruque; o rolo queimado pelo rei Jeoaquim foi reescrito com acréscimos.", nc: "Composição durante e logo após o ministério do profeta, com edições posteriores." },
+      { t: "AT", n: "Lamentações", g: "pmai", a: "Jeremias (tradição)", tr: [-586, -585], cr: [-586, -570], ref: "Lm 1:1; 2Cr 35:25",
+        nt: "Escrito logo após a destruição de Jerusalém pelos babilônios.", nc: "Escrito logo após 586 a.C.; a autoria de Jeremias não é pressuposta." },
+      { t: "AT", n: "Ezequiel", g: "pmai", a: "Ezequiel", tr: [-593, -570], cr: [-593, -571], ref: "Ez 1:1-2; 29:17",
+        nt: "Visões datadas com precisão, do 5º ao 27º ano do exílio do rei Joaquim.", nc: NC_IGUAL },
+      { t: "AT", n: "Daniel", g: "pmai", a: "Daniel", tr: [-605, -530], cr: [-167, -164, -300], ref: "Dn 1:1; 10:1; Mt 24:15",
+        nt: "Escrito por Daniel na Babilônia; sua última visão é datada no 3º ano de Ciro (c. 536 a.C.). Jesus se refere ao 'profeta Daniel'.", nc: "Forma final durante a perseguição de Antíoco IV Epifânio (revolta dos Macabeus); as narrativas dos caps. 1–6 seriam mais antigas. Seria o livro mais recente do cânon hebraico." },
+      { t: "AT", n: "Oseias", g: "pmen", a: "Oseias", tr: [-755, -715], cr: [-750, -722], ref: "Os 1:1",
+        nt: "Ministério dos dias de Jeroboão II até Ezequias.", nc: NC_IGUAL },
+      { t: "AT", n: "Joel", g: "pmen", a: "Joel", tr: [-835, -796], cr: [-450, -400], ref: "Jl 1:1",
+        nt: "A data é debatida mesmo entre conservadores: alguns a situam no reinado de Joás (séc. IX a.C.), outros por volta de 600–500 a.C.", nc: "Situado no período persa." },
+      { t: "AT", n: "Amós", g: "pmen", a: "Amós", tr: [-760, -750], cr: [-760, -750], ref: "Am 1:1; Zc 14:5",
+        nt: "Profetizou 'dois anos antes do terremoto', no tempo de Uzias e Jeroboão II.", nc: "Considerado um dos textos proféticos escritos mais antigos, com acréscimos editoriais posteriores." },
+      { t: "AT", n: "Obadias", g: "pmen", a: "Obadias", tr: [-586, -580], cr: [-586, -550], ref: "Ob 10-14",
+        nt: "Geralmente ligado à participação de Edom na queda de Jerusalém (586 a.C.); alguns conservadores preferem o séc. IX a.C., no reinado de Jeorão.", nc: "Escrito após a queda de Jerusalém." },
+      { t: "AT", n: "Jonas", g: "pmen", a: "Jonas", tr: [-780, -760], cr: [-450, -350], ref: "2Rs 14:25",
+        nt: "Jonas profetizou no reinado de Jeroboão II.", nc: "Lido como narrativa didática pós-exílica." },
+      { t: "AT", n: "Miqueias", g: "pmen", a: "Miqueias", tr: [-735, -700], cr: [-735, -700], ref: "Mq 1:1; Jr 26:18",
+        nt: "Contemporâneo de Isaías, nos dias de Jotão, Acaz e Ezequias.", nc: NC_IGUAL },
+      { t: "AT", n: "Naum", g: "pmen", a: "Naum", tr: [-663, -612], cr: [-620, -612], ref: "Na 3:8",
+        nt: "Entre a queda de Tebas (663 a.C.), citada como já ocorrida, e a queda de Nínive (612 a.C.).", nc: "Pouco antes da queda de Nínive." },
+      { t: "AT", n: "Habacuque", g: "pmen", a: "Habacuque", tr: [-609, -597], cr: [-605, -600], ref: "Hc 1:6",
+        nt: "Pouco antes da invasão babilônica de Judá.", nc: NC_IGUAL },
+      { t: "AT", n: "Sofonias", g: "pmen", a: "Sofonias", tr: [-640, -621], cr: [-630, -620], ref: "Sf 1:1",
+        nt: "Nos dias de Josias, provavelmente antes da reforma de 622 a.C.", nc: NC_IGUAL },
+      { t: "AT", n: "Ageu", g: "pmen", a: "Ageu", tr: [-520, -520], cr: [-520, -520], ref: "Ag 1:1",
+        nt: "Profecias datadas no 2º ano do rei Dario (520 a.C.).", nc: "Datação idêntica à tradicional." },
+      { t: "AT", n: "Zacarias", g: "pmen", a: "Zacarias", tr: [-520, -480], cr: [-520, -300], ref: "Zc 1:1",
+        nt: "Começou a profetizar em 520 a.C.; os caps. 9–14 seriam da fase posterior do seu ministério.", nc: "Caps. 1–8 (c. 520–518 a.C.) e caps. 9–14 (c. 350–300 a.C.), estes atribuídos a outra mão." },
+      { t: "AT", n: "Malaquias", g: "pmen", a: "Malaquias", tr: [-433, -420], cr: [-460, -450], ref: "Ml 1:1; Ne 13:6",
+        nt: "Combate os mesmos problemas enfrentados por Neemias, provavelmente durante a ausência dele de Jerusalém.", nc: "Pouco antes das reformas de Esdras e Neemias." },
+
+      // ---------------- DEUTEROCANÔNICOS (opcional) ----------------
+      { t: "AT", n: "Tobias", g: "deut", a: "Desconhecido", tr: [-200, -150], cr: [-200, -150], nt: N_DEUT, nc: N_DEUT },
+      { t: "AT", n: "Judite", g: "deut", a: "Desconhecido", tr: [-200, -150], cr: [-200, -150], nt: N_DEUT, nc: N_DEUT },
+      { t: "AT", n: "1 Macabeus", g: "deut", a: "Desconhecido", tr: [-120, -100], cr: [-120, -100], nt: N_DEUT, nc: N_DEUT },
+      { t: "AT", n: "2 Macabeus", g: "deut", a: "Resumo da obra de Jasão de Cirene", tr: [-120, -100], cr: [-120, -100], nt: N_DEUT, nc: N_DEUT },
+      { t: "AT", n: "Sabedoria", g: "deut", a: "Judeu de Alexandria (atribuído a Salomão)", tr: [-50, -30], cr: [-50, -30], nt: N_DEUT, nc: N_DEUT },
+      { t: "AT", n: "Eclesiástico", g: "deut", a: "Jesus ben Sirá", tr: [-190, -175], cr: [-190, -175],
+        nt: N_DEUT + " Foi traduzido para o grego pelo neto do autor, c. 132 a.C.", nc: N_DEUT },
+
+      // ---------------- NOVO TESTAMENTO ----------------
+      { t: "NT", n: "Mateus", g: "evan", a: "Apóstolo Mateus", tr: [55, 65, 30], cr: [80, 85, 30], ref: "Mt 24:1-2",
+        nt: "A tradição antiga (Papias, Irineu) o atribui a Mateus; muitos conservadores o datam antes de 70 d.C., pois a destruição do templo aparece como profecia ainda não cumprida.", nc: "Usa Marcos como fonte, além de material próprio e de uma fonte comum com Lucas (a chamada 'Q')." },
+      { t: "NT", n: "Marcos", g: "evan", a: "João Marcos (memórias de Pedro)", tr: [55, 65, 30], cr: [65, 70, 30], ref: "1Pe 5:13",
+        nt: "Segundo Papias, Marcos registrou a pregação de Pedro.", nc: "O primeiro evangelho escrito, provável fonte de Mateus e Lucas." },
+      { t: "NT", n: "Lucas", g: "evan", a: "Lucas, o médico", tr: [60, 62, 30], cr: [80, 90, 30], ref: "Lc 1:1-4",
+        nt: "Lucas declara ter investigado tudo a partir de testemunhas oculares; foi escrito antes de Atos.", nc: "Primeiro volume da obra Lucas–Atos, escrita após a destruição do templo." },
+      { t: "NT", n: "João", g: "evan", a: "Apóstolo João", tr: [85, 95, 30], cr: [90, 100, 30], ref: "Jo 21:24",
+        nt: "O discípulo amado, escrevendo em Éfeso no fim do século I.", nc: "O último evangelho canônico a ser finalizado." },
+      { t: "NT", n: "Atos", g: "atos", a: "Lucas", tr: [62, 63, 30], cr: [80, 90, 30], ref: "At 28:30-31",
+        nt: "Termina com Paulo preso em Roma (c. 62 d.C.) sem narrar sua morte — indício de que foi escrito nessa época.", nc: "Segundo volume da obra de Lucas." },
+      { t: "NT", n: "Romanos", g: "paulo", a: "Apóstolo Paulo", tr: [57, 58], cr: [57, 58], ref: "Rm 15:25-26; 16:23",
+        nt: "Escrita em Corinto, antes da viagem a Jerusalém com a oferta.", nc: NC_IGUAL },
+      { t: "NT", n: "1 Coríntios", g: "paulo", a: "Apóstolo Paulo", tr: [54, 55], cr: [53, 54], ref: "1Co 16:8",
+        nt: "Escrita em Éfeso.", nc: NC_IGUAL },
+      { t: "NT", n: "2 Coríntios", g: "paulo", a: "Apóstolo Paulo", tr: [55, 56], cr: [55, 56], ref: "2Co 2:12-13; 7:5",
+        nt: "Escrita na Macedônia.", nc: NC_IGUAL },
+      { t: "NT", n: "Gálatas", g: "paulo", a: "Apóstolo Paulo", tr: [48, 49], cr: [53, 55], ref: "Gl 1:2; At 15",
+        nt: "Muitos conservadores a datam antes do Concílio de Jerusalém (49 d.C.), dirigida às igrejas do sul da Galácia; outros preferem c. 55 d.C.", nc: "Autoria paulina aceita; datada em meados da década de 50." },
+      { t: "NT", n: "Efésios", g: "paulo", a: "Apóstolo Paulo", tr: [60, 62], cr: [80, 90], ref: "Ef 3:1; 6:20",
+        nt: "Uma das 'cartas da prisão', escrita em Roma.", nc: "Atribuída a um discípulo de Paulo, pelo estilo e pela eclesiologia mais desenvolvida." },
+      { t: "NT", n: "Filipenses", g: "paulo", a: "Apóstolo Paulo", tr: [61, 62], cr: [55, 61], ref: "Fp 1:13",
+        nt: "Carta da prisão em Roma.", nc: "Autoria paulina aceita; o local da prisão é debatido (Éfeso ou Roma)." },
+      { t: "NT", n: "Colossenses", g: "paulo", a: "Apóstolo Paulo", tr: [60, 62], cr: [60, 80], ref: "Cl 4:18",
+        nt: "Carta da prisão, enviada junto com Filemom.", nc: "Autoria paulina debatida." },
+      { t: "NT", n: "1 Tessalonicenses", g: "paulo", a: "Apóstolo Paulo", tr: [50, 51], cr: [50, 51], ref: "1Ts 3:1-6",
+        nt: "Escrita em Corinto; está entre os documentos cristãos mais antigos.", nc: "O documento cristão mais antigo preservado." },
+      { t: "NT", n: "2 Tessalonicenses", g: "paulo", a: "Apóstolo Paulo", tr: [51, 52], cr: [51, 80], ref: "2Ts 2:2; 3:17",
+        nt: "Escrita pouco depois da primeira carta.", nc: "Se paulina, logo após a primeira; se de um discípulo, até c. 80 d.C." },
+      { t: "NT", n: "1 Timóteo", g: "paulo", a: "Apóstolo Paulo", tr: [62, 64], cr: [90, 110], ref: "1Tm 1:3",
+        nt: "Escrita após a primeira prisão romana de Paulo.", nc: NC_PAST },
+      { t: "NT", n: "2 Timóteo", g: "paulo", a: "Apóstolo Paulo", tr: [66, 67], cr: [90, 110], ref: "2Tm 4:6-8",
+        nt: "A última carta de Paulo, pouco antes do martírio sob Nero.", nc: NC_PAST },
+      { t: "NT", n: "Tito", g: "paulo", a: "Apóstolo Paulo", tr: [63, 64], cr: [90, 110], ref: "Tt 1:5",
+        nt: "Escrita entre a primeira e a segunda prisão de Paulo.", nc: NC_PAST },
+      { t: "NT", n: "Filemom", g: "paulo", a: "Apóstolo Paulo", tr: [60, 62], cr: [55, 61], ref: "Fm 1,9",
+        nt: "Carta da prisão, enviada junto com Colossenses.", nc: "Autoria paulina aceita." },
+      { t: "NT", n: "Hebreus", g: "gerais", a: "Desconhecido", tr: [64, 69], cr: [80, 90], ref: "Hb 8:4-5; 10:1-2",
+        nt: "Fala do culto no templo como ainda em funcionamento, o que sugere data anterior a 70 d.C.", nc: "Datado após a destruição do templo (há também quem defenda data anterior)." },
+      { t: "NT", n: "Tiago", g: "gerais", a: "Tiago, irmão de Jesus", tr: [45, 49], cr: [60, 90], ref: "Tg 1:1; At 15:13",
+        nt: "Possivelmente o escrito mais antigo do NT, anterior ao Concílio de Jerusalém.", nc: "Datação muito debatida, entre antes de 70 d.C. e o fim do século I." },
+      { t: "NT", n: "1 Pedro", g: "gerais", a: "Apóstolo Pedro", tr: [62, 64], cr: [80, 95], ref: "1Pe 5:12-13",
+        nt: "Escrita de 'Babilônia' (Roma), pouco antes da perseguição de Nero.", nc: "Muitos a atribuem a um discípulo de Pedro." },
+      { t: "NT", n: "2 Pedro", g: "gerais", a: "Apóstolo Pedro", tr: [65, 68], cr: [110, 130], ref: "2Pe 1:14; 3:15-16",
+        nt: "Escrita pouco antes do martírio de Pedro.", nc: "Considerada pelos estudiosos críticos o texto mais tardio do Novo Testamento." },
+      { t: "NT", n: "1 João", g: "gerais", a: "Apóstolo João", tr: [85, 95], cr: [90, 100], ref: "1Jo 1:1-3",
+        nt: "Escrita em Éfeso, no fim do século I.", nc: "Ligada ao mesmo círculo do Evangelho de João." },
+      { t: "NT", n: "2 João", g: "gerais", a: "Apóstolo João ('o presbítero')", tr: [85, 95], cr: [90, 100], ref: "2Jo 1",
+        nt: "Escrita em Éfeso, no fim do século I.", nc: "Ligada ao mesmo círculo do Evangelho de João." },
+      { t: "NT", n: "3 João", g: "gerais", a: "Apóstolo João ('o presbítero')", tr: [85, 95], cr: [90, 100], ref: "3Jo 1",
+        nt: "Escrita em Éfeso, no fim do século I.", nc: "Ligada ao mesmo círculo do Evangelho de João." },
+      { t: "NT", n: "Judas", g: "gerais", a: "Judas, irmão de Tiago", tr: [65, 80], cr: [90, 110], ref: "Jd 1,17-18",
+        nt: "Escrita na segunda metade do século I, por um irmão do Senhor.", nc: "Datada no fim do século I ou início do II." },
+      { t: "NT", n: "Apocalipse", g: "prof", a: "Apóstolo João", tr: [95, 96], cr: [95, 95], ref: "Ap 1:9",
+        nt: "Escrito no exílio em Patmos, no reinado de Domiciano (testemunho de Irineu). Uma minoria defende c. 68 d.C., no tempo de Nero.", nc: "Também datado no reinado de Domiciano." }
+    ];
+    BOOKS.forEach((b, i) => { b.id = i; });
+
+    const BOOK_PANELS = {
+      AT: {
+        titulo: "ANTIGO TESTAMENTO", dom: [-2100, 0], minor: 100, major: 500, label: 200,
+        fmt: (v) => `${-v} a.C.`,
+        marcos: [
+          { y: -1010, l: "Davi rei" }, { y: -931, l: "Reino dividido" }, { y: -722, l: "Queda de Samaria" },
+          { y: -586, l: "Queda de Jerusalém" }, { y: -538, l: "Edito de Ciro" }, { y: -167, l: "Antíoco IV" }
+        ]
+      },
+      NT: {
+        titulo: "NOVO TESTAMENTO", dom: [25, 135], minor: 5, major: 10, label: 10,
+        fmt: (v) => `${v} d.C.`,
+        marcos: [
+          { y: 30, l: "Crucificação" }, { y: 49, l: "Concílio de Jerusalém" },
+          { y: 64, l: "Perseguição de Nero" }, { y: 70, l: "Destruição do Templo" }
+        ]
+      }
+    };
+
+    const booksState = { modo: "trad", ordem: "canon", deutero: false };
+    try {
+      const salvo = JSON.parse(localStorage.getItem("cronologia-livros") || "null");
+      if (salvo) Object.assign(booksState, salvo);
+    } catch (e) {}
+    function salvarBooksState() {
+      try { localStorage.setItem("cronologia-livros", JSON.stringify(booksState)); } catch (e) {}
+    }
+
+    function fmtRange(arr) {
+      const [a, b] = arr;
+      const era = b < 0 ? "a.C." : "d.C.";
+      return a === b ? `c. ${Math.abs(a)} ${era}` : `c. ${Math.abs(a)}–${Math.abs(b)} ${era}`;
+    }
+
+    function bookLists() {
+      const key = booksState.modo === "crit" ? "cr" : "tr";
+      const res = {};
+      ["AT", "NT"].forEach((t) => {
+        let l = BOOKS.filter((b) => b.t === t && (booksState.deutero || b.g !== "deut"));
+        if (booksState.ordem === "comp") {
+          l = l.slice().sort((x, y) => (x[key][0] - y[key][0]) || (x[key][1] - y[key][1]) || (x.id - y.id));
+        }
+        res[t] = l;
+      });
+      return res;
+    }
+
+    function colorId(hex) { return "fade-" + hex.replace("#", ""); }
+
+    function buildBooksSvg(P, interactive) {
+      const W = config.width, mL = 132, mR = 40, cw = W - mL - mR;
+      const rowH = 24;
+      const listas = bookLists();
+      const modo = booksState.modo;
+
+      const svg = createSvgElement("svg", {
+        id: interactive ? "booksSvg" : "booksSvgExport",
+        width: "100%", height: "auto", role: "img",
+        "aria-label": "Gráfico da datação dos livros bíblicos"
+      });
+
+      // Gradientes do trecho de tradição oral / fontes (esmaecido)
+      const defs = createSvgElement("defs");
+      const cores = new Set([...Object.values(BOOK_GROUPS).map((g) => g.cor), MODE_COLORS.trad, MODE_COLORS.crit]);
+      cores.forEach((c) => {
+        const lg = createSvgElement("linearGradient", { id: colorId(c), x1: "0", y1: "0", x2: "1", y2: "0" });
+        lg.appendChild(createSvgElement("stop", { offset: "0%", "stop-color": c, "stop-opacity": "0.03" }));
+        lg.appendChild(createSvgElement("stop", { offset: "100%", "stop-color": c, "stop-opacity": "0.5" }));
+        defs.appendChild(lg);
+      });
+      svg.appendChild(defs);
+
+      const bg = createSvgElement("rect", { x: 0, y: 0, width: W, fill: P.bg });
+      svg.appendChild(bg);
+
+      const titulo = createSvgElement("text", {
+        x: W / 2, y: 26, "text-anchor": "middle", fill: P.title,
+        "font-family": "Inter, sans-serif", "font-size": "15", "font-weight": "700"
+      });
+      const sub = modo === "comp" ? "Tradicional x Crítica" : MODE_NAMES[modo];
+      titulo.textContent = `Datação dos Livros Bíblicos — ${sub}`;
+      svg.appendChild(titulo);
+
+      function txt(attrs, content) {
+        const t = createSvgElement("text", Object.assign({ "font-family": "Inter, sans-serif" }, attrs));
+        t.textContent = content;
+        return t;
+      }
+
+      function painel(tKey, y0) {
+        const cfg = BOOK_PANELS[tKey];
+        const lista = listas[tKey];
+        const [d0, d1] = cfg.dom;
+        const sx = (v) => mL + ((v - d0) / (d1 - d0)) * cw;
+        const rowsTop = y0 + 70;
+        const rowsBottom = rowsTop + lista.length * rowH;
+
+        svg.appendChild(txt({ x: mL + cw / 2, y: y0 + 16, "text-anchor": "middle", fill: P.title,
+          "font-size": "13", "font-weight": "700", "letter-spacing": "4" }, cfg.titulo));
+
+        // Grade e eixo
+        for (let v = Math.ceil(d0 / cfg.minor) * cfg.minor; v <= d1; v += cfg.minor) {
+          const x = sx(v);
+          const isMajor = v % cfg.major === 0;
+          svg.appendChild(createSvgElement("line", { x1: x, y1: rowsTop, x2: x, y2: rowsBottom,
+            stroke: isMajor ? P.gridMajor : P.gridMinor, "stroke-width": isMajor ? "1.1" : "0.7" }));
+          if (v % cfg.label === 0 && v !== 0) {
+            svg.appendChild(createSvgElement("line", { x1: x, y1: rowsBottom, x2: x, y2: rowsBottom + 5, stroke: P.axis, "stroke-width": "1" }));
+            svg.appendChild(txt({ x: x, y: rowsBottom + 19, "text-anchor": "middle", fill: P.axisLabel,
+              "font-size": "11", "font-weight": "500" }, cfg.fmt(v)));
+          }
+        }
+        svg.appendChild(createSvgElement("line", { x1: mL, y1: rowsBottom, x2: mL + cw, y2: rowsBottom, stroke: P.axis, "stroke-width": "1.3" }));
+
+        // Marcos históricos (linhas tracejadas)
+        cfg.marcos.forEach((m, i) => {
+          const x = sx(m.y);
+          const ly = y0 + 34 + (i % 3) * 12;
+          svg.appendChild(createSvgElement("line", { x1: x, y1: ly + 3, x2: x, y2: rowsBottom,
+            stroke: P.flood, "stroke-width": "1", "stroke-dasharray": "3 3", opacity: "0.75" }));
+          svg.appendChild(txt({ x: x, y: ly, "text-anchor": "middle", fill: P.floodText,
+            "font-size": "10.5", "font-weight": "600" }, `${m.l} (${Math.abs(m.y)})`));
+        });
+
+        // Linhas dos livros
+        lista.forEach((b, i) => {
+          const yR = rowsTop + i * rowH;
+          const yc = yR + rowH / 2;
+          const grupo = BOOK_GROUPS[b.g];
+          const g = createSvgElement("g", interactive ? {
+            class: "book-row", tabindex: "0", role: "button",
+            "aria-label": `${b.n}. Clique para ver as datações.`
+          } : {});
+
+          if (interactive) {
+            g.appendChild(createSvgElement("rect", { class: "row-highlight", x: 6, y: yR + 1,
+              width: W - 12, height: rowH - 2, rx: 5, fill: P.highlight, opacity: "0" }));
+          }
+
+          g.appendChild(createSvgElement("circle", { cx: mL - 10, cy: yc, r: 4, fill: grupo.cor }));
+          g.appendChild(txt({ class: "book-label", x: mL - 20, y: yc + 4.2, "text-anchor": "end",
+            fill: P.axisLabel, "font-size": "12.5", "font-weight": "500" }, b.n));
+
+          function faixa(arr, cor, cy, h, comRotulo) {
+            const [cs, ce, os] = arr;
+            const xCs = sx(cs);
+            let xIni = xCs;
+            if (os !== undefined && os !== null) {
+              xIni = sx(os);
+              g.appendChild(createSvgElement("rect", { x: xIni, y: cy - h / 2, width: Math.max(xCs - xIni, 1), height: h,
+                rx: 2, fill: `url(#${colorId(cor)})`, stroke: cor, "stroke-width": "0.8",
+                "stroke-dasharray": "2 2", "stroke-opacity": "0.55" }));
+            }
+            const wComp = Math.max(sx(ce) - xCs, 5);
+            g.appendChild(createSvgElement("rect", { x: xCs, y: cy - h / 2, width: wComp, height: h, rx: 2, fill: cor }));
+            const xFim = xCs + wComp;
+            // Marcador da forma final
+            g.appendChild(createSvgElement("circle", { cx: xFim, cy: cy, r: h / 2 + 1.5, fill: P.bg, stroke: cor, "stroke-width": "2" }));
+
+            if (comRotulo) {
+              const rotulo = fmtRange([cs, ce]);
+              const larg = rotulo.length * 6;
+              if (xFim + 10 + larg <= W - 6) {
+                g.appendChild(txt({ x: xFim + 10, y: cy + 3.8, fill: P.caption, "font-size": "10.5", "font-weight": "500" }, rotulo));
+              } else {
+                g.appendChild(txt({ x: xIni - 8, y: cy + 3.8, "text-anchor": "end", fill: P.caption, "font-size": "10.5", "font-weight": "500" }, rotulo));
+              }
+            }
+          }
+
+          if (modo === "comp") {
+            faixa(b.tr, MODE_COLORS.trad, yc - 4.5, 7, false);
+            faixa(b.cr, MODE_COLORS.crit, yc + 4.5, 7, false);
+          } else {
+            faixa(modo === "crit" ? b.cr : b.tr, grupo.cor, yc, 11, true);
+          }
+
+          if (interactive) {
+            g.addEventListener("click", () => openBookModal(b.id));
+            g.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBookModal(b.id); }
+            });
+          }
+          svg.appendChild(g);
+        });
+
+        return rowsBottom + 30;
+      }
+
+      let y = 44;
+      y = painel("AT", y);
+      y = painel("NT", y + 22);
+      const H = y + 12;
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      svg.dataset.h = H;
+      bg.setAttribute("height", H);
+      return svg;
+    }
+
+    function renderBooksLegend() {
+      const el = document.getElementById("booksLegend");
+      const chip = (cor, texto) =>
+        `<span class="inline-flex items-center gap-1.5"><span class="w-3.5 h-3 rounded-sm inline-block" style="background:${cor}"></span>${texto}</span>`;
+      let html = "";
+      if (booksState.modo === "comp") {
+        html += chip(MODE_COLORS.trad, "Datação tradicional (barra de cima)") + chip(MODE_COLORS.crit, "Datação crítica (barra de baixo)");
+      } else {
+        const grupos = new Set(BOOKS.filter((b) => booksState.deutero || b.g !== "deut").map((b) => b.g));
+        grupos.forEach((g) => { html += chip(BOOK_GROUPS[g].cor, BOOK_GROUPS[g].nome); });
+      }
+      html += `<span class="inline-flex items-center gap-1.5"><span class="w-6 h-3 rounded-sm inline-block border border-dashed border-slate-400" style="background:linear-gradient(90deg,rgba(100,116,139,.05),rgba(100,116,139,.45))"></span>Tradição oral / fontes</span>`;
+      html += `<span class="inline-flex items-center gap-1.5"><span class="w-6 h-3 rounded-sm inline-block bg-slate-500"></span>Composição escrita</span>`;
+      html += `<span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block border-2 border-slate-500"></span>Forma final</span>`;
+      html += `<span class="inline-flex items-center gap-1.5"><span class="w-0 h-3.5 inline-block border-l border-dashed border-blue-500"></span>Marco histórico</span>`;
+      el.innerHTML = html;
+    }
+
+    function syncBooksButtons() {
+      document.querySelectorAll("[data-modo]").forEach((btn) => {
+        const ativo = btn.dataset.modo === booksState.modo;
+        btn.classList.toggle("seg-ativo", ativo);
+        btn.setAttribute("aria-pressed", ativo);
+      });
+      document.querySelectorAll("[data-ordem]").forEach((btn) => {
+        const ativo = btn.dataset.ordem === booksState.ordem;
+        btn.classList.toggle("seg-ativo", ativo);
+        btn.setAttribute("aria-pressed", ativo);
+      });
+      document.getElementById("chkDeutero").checked = booksState.deutero;
+    }
+
+    function renderBooks() {
+      const c = document.getElementById("booksSvgContainer");
+      c.innerHTML = "";
+      c.appendChild(buildBooksSvg(currentPalette(), true));
+      renderBooksLegend();
+      syncBooksButtons();
+    }
+
+    document.querySelectorAll("[data-modo]").forEach((btn) =>
+      btn.addEventListener("click", () => { booksState.modo = btn.dataset.modo; salvarBooksState(); renderBooks(); }));
+    document.querySelectorAll("[data-ordem]").forEach((btn) =>
+      btn.addEventListener("click", () => { booksState.ordem = btn.dataset.ordem; salvarBooksState(); renderBooks(); }));
+    document.getElementById("chkDeutero").addEventListener("change", (e) => {
+      booksState.deutero = e.target.checked; salvarBooksState(); renderBooks();
+    });
+
+    // ----- Box (modal) do livro -----
+    const bookModal = document.getElementById("bookModal");
+    let bookOrder = [];
+    let bookPos = 0;
+
+    function openBookModal(id) {
+      const l = bookLists();
+      bookOrder = [...l.AT, ...l.NT].map((b) => b.id);
+      bookPos = Math.max(0, bookOrder.indexOf(id));
+      const b = BOOKS[id];
+      const grupo = BOOK_GROUPS[b.g];
+
+      document.getElementById("bookIndexBadge").textContent = `Livro ${bookPos + 1} de ${bookOrder.length}`;
+      document.getElementById("bookGroupBadge").textContent = `${b.t === "AT" ? "Antigo Testamento" : "Novo Testamento"} • ${grupo.nome}`;
+      document.getElementById("bookGroupDot").style.background = grupo.cor;
+      document.getElementById("bookTitle").textContent = b.n;
+      document.getElementById("bookAuthor").textContent = `Autoria segundo a tradição: ${b.a}`;
+
+      [["tr", "Trad"], ["cr", "Crit"]].forEach(([k, s]) => {
+        const arr = b[k];
+        document.getElementById(`book${s}Range`).textContent = fmtRange(arr);
+        const oral = document.getElementById(`book${s}Oral`);
+        if (arr[2] !== undefined) {
+          oral.textContent = `Tradição oral / fontes desde c. ${Math.abs(arr[2])} ${arr[2] < 0 ? "a.C." : "d.C."}`;
+          oral.classList.remove("hidden");
+        } else {
+          oral.classList.add("hidden");
+        }
+        document.getElementById(`book${s}Note`).textContent = k === "tr" ? b.nt : b.nc;
+      });
+
+      const refBox = document.getElementById("bookRefBox");
+      if (b.ref) {
+        document.getElementById("bookRef").textContent = b.ref;
+        refBox.classList.remove("hidden");
+      } else {
+        refBox.classList.add("hidden");
+      }
+
+      document.getElementById("btnPrevBook").disabled = bookPos === 0;
+      document.getElementById("btnNextBook").disabled = bookPos === bookOrder.length - 1;
+
+      bookModal.classList.remove("hidden");
+      bookModal.classList.add("flex");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeBookModal() {
+      bookModal.classList.add("hidden");
+      bookModal.classList.remove("flex");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("btnCloseBook").addEventListener("click", closeBookModal);
+    document.getElementById("btnCloseBookFooter").addEventListener("click", closeBookModal);
+    bookModal.addEventListener("click", (e) => { if (e.target === bookModal) closeBookModal(); });
+    document.getElementById("btnPrevBook").addEventListener("click", () => {
+      if (bookPos > 0) openBookModal(bookOrder[bookPos - 1]);
+    });
+    document.getElementById("btnNextBook").addEventListener("click", () => {
+      if (bookPos < bookOrder.length - 1) openBookModal(bookOrder[bookPos + 1]);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (bookModal.classList.contains("hidden")) return;
+      if (e.key === "Escape") closeBookModal();
+      if (e.key === "ArrowLeft" && bookPos > 0) openBookModal(bookOrder[bookPos - 1]);
+      if (e.key === "ArrowRight" && bookPos < bookOrder.length - 1) openBookModal(bookOrder[bookPos + 1]);
+    });
+
+    // ----- Abas: Personagens | Livros -----
+    let currentView = "personagens";
+    try { currentView = localStorage.getItem("cronologia-aba") || "personagens"; } catch (e) {}
+
+    function showView(v) {
+      currentView = v;
+      try { localStorage.setItem("cronologia-aba", v); } catch (e) {}
+      const livros = v === "livros";
+      document.getElementById("viewPersonagens").classList.toggle("hidden", livros);
+      document.getElementById("viewLivros").classList.toggle("hidden", !livros);
+      document.getElementById("tabPersonagens").classList.toggle("tab-ativa", !livros);
+      document.getElementById("tabLivros").classList.toggle("tab-ativa", livros);
+      document.getElementById("pageBadge").textContent = livros ? "Datação dos Livros" : "Anno Mundi (Anos após a Criação)";
+      document.getElementById("pageTitle").textContent = livros
+        ? "Quando os Livros da Bíblia Foram Escritos"
+        : "Longevidade dos Patriarcas e Personagens Bíblicos";
+    }
+    document.getElementById("tabPersonagens").addEventListener("click", () => showView("personagens"));
+    document.getElementById("tabLivros").addEventListener("click", () => showView("livros"));
+
     // ===== Tema claro / escuro (sol / lua) =====
     document.getElementById("btnTheme").addEventListener("click", () => {
       const escuro = document.documentElement.classList.toggle("dark");
       try { localStorage.setItem("cronologia-tema", escuro ? "escuro" : "claro"); } catch (e) {}
       renderChart();
+      renderBooks();
     });
 
     // ===== Versão e atualização do app =====
@@ -1154,6 +1807,8 @@
     // Inicializa o gráfico ao carregar e verifica atualização
     window.addEventListener("DOMContentLoaded", () => {
       renderChart();
+      renderBooks();
+      showView(currentView);
       verificarVersaoNova();
     });
     document.addEventListener("visibilitychange", () => {
